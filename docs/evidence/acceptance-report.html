@@ -1,0 +1,37 @@
+<!doctype html><html lang=en><head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Investigation report: Lab incident: jump01</title><style>
+:root{--bg:#fff;--fg:#1b1f2a;--mute:#5b6577;--line:#d9deea;--accent:#6d4fe0;--card:#f6f7fb;--bad:#b42318}
+@media (prefers-color-scheme:dark){:root{--bg:#0c1220;--fg:#eef1f8;--mute:#99a7bc;--line:#283345;
+--accent:#a78bfa;--card:#131b2d;--bad:#ff8a80}}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.55 system-ui,sans-serif}
+main{max-width:56rem;margin:0 auto;padding:1.5rem 1rem 4rem}
+h1{font-size:1.7rem;margin:.2rem 0}h2{margin-top:2.4rem;border-bottom:2px solid var(--accent);
+padding-bottom:.2rem}h3{margin:1.4rem 0 .3rem;font-size:1rem;color:var(--mute);
+text-transform:uppercase;letter-spacing:.06em}
+.meta,.note{color:var(--mute)}.card{background:var(--card);border:1px solid var(--line);
+border-radius:10px;padding:.8rem 1rem;margin:.6rem 0}.bad{color:var(--bad);font-weight:700}
+pre{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:.7rem;
+overflow-x:auto;font-size:.82rem;white-space:pre-wrap;word-break:break-word}
+table{border-collapse:collapse;width:100%;font-size:.9rem;display:block;overflow-x:auto}
+th,td{border:1px solid var(--line);padding:.35rem .5rem;text-align:left;vertical-align:top}
+code{font-size:.8rem;word-break:break-all}
+.tag{display:inline-block;border:1px solid var(--accent);color:var(--accent);border-radius:999px;
+padding:0 .6rem;font-size:.8rem;margin-right:.4rem}
+</style></head><body><main><h1>Investigation report: Lab incident: jump01</h1><p class=meta>Analyst: 5K · Generated: 2026-10-29T20:00:00Z · Evidence quotes redacted</p><p class=note>Case integrity: verified (16 audit entries, head <code>0492f39b08ab6df6</code>).</p><h2>Findings</h2><table><tr><th>Ref<th>Severity<th>Status<th>Title</tr><tr><td>F1<td>high<td>supported<td>jump01 was brute-forced and an account was compromised<tr><td>F2<td>medium<td>refuted<td>web01 was the entry point</table><h2>F1: jump01 was brute-forced and an account was compromised</h2><p><span class=tag>high</span><span class=tag>supported</span><span class=note>The evidence below supports this conclusion.</span></p><h3>What happened</h3><p>203.0.113.50 made 24 failed SSH password attempts against jump01 in about 50 seconds, then logged in as admin with a password.</p><h3>Supporting evidence</h3><div class=card><strong>E1 scan-before</strong>, observation 3 — SSH is exposed on jump01<pre>   3  2026-10-29T17:00:01Z  10.0.0.5:22/tcp open ssh OpenSSH 8.9p1 Ubuntu 3ubuntu0.6</pre></div><div class=card><strong>E2 jump01-auth</strong>, observations 3-26 — 24 failed attempts, one source<pre>   3  2026-10-29T18:14:02Z  Oct 29 18:14:02 jump01 sshd[2201]: Failed password for root from 203.0.113.50 port 40000 ssh2
+   4  2026-10-29T18:14:04Z  Oct 29 18:14:04 jump01 sshd[2202]: Failed password for admin from 203.0.113.50 port 40001 ssh2
+   5  2026-10-29T18:14:06Z  Oct 29 18:14:06 jump01 sshd[2203]: Failed password for admin from 203.0.113.50 port 40002 ssh2
+   6  2026-10-29T18:14:08Z  Oct 29 18:14:08 jump01 sshd[2204]: Failed password for ubuntu from 203.0.113.50 port 40003 ssh2
+   7  2026-10-29T18:14:10Z  Oct 29 18:14:10 jump01 sshd[2205]: Failed password for invalid user test from 203.0.113.50 port 40004 ssh2
+   8  2026-10-29T18:14:12Z  Oct 29 18:14:12 jump01 sshd[2206]: Failed password for admin from 203.0.113.50 port 40005 ssh2
+   9  2026-10-29T18:14:14Z  Oct 29 18:14:14 jump01 sshd[2207]: Failed password for invalid user oracle from 203.0.113.50 port 40006 ssh2
+  10  2026-10-29T18:14:16Z  Oct 29 18:14:16 jump01 sshd[2208]: Failed password for admin from 203.0.113.50 port 40007 ssh2
+  11  2026-10-29T18:14:18Z  Oct 29 18:14:18 jump01 sshd[2209]: Failed password for root from 203.0.113.50 port 40008 ssh2
+  12  2026-10-29T18:14:20Z  Oct 29 18:14:20 jump01 sshd[2210]: Failed password for admin from 203.0.113.50 port 40009 ssh2
+  13  2026-10-29T18:14:22Z  Oct 29 18:14:22 jump01 sshd[2211]: Failed password for admin from 203.0.113.50 port 40010 ssh2
+  14  2026-10-29T18:14:24Z  Oct 29 18:14:24 jump01 sshd[2212]: Failed password for ubuntu from 203.0.113.50 port 40011 ssh2
+… 12 more in the evidence</pre></div><div class=card><strong>E2 jump01-auth</strong>, observations 27-28 — then a successful login<pre>  27  2026-10-29T18:15:05Z  Oct 29 18:15:05 jump01 sshd[2230]: Accepted password for admin from 203.0.113.50 port 40031 ssh2
+  28  2026-10-29T18:15:05Z  Oct 29 18:15:05 jump01 sshd[2230]: pam_unix(sshd:session): session opened for user admin(uid=1001) by (uid=0)</pre></div><h3>What remains unknown</h3><ul><li>U1: How did the attacker get the admin password: guessed or reused?</li><li>U2: What was done during the 42-second session beyond one sudo command?</li></ul><p class=note><em>Note: No contradicting evidence has been recorded for this finding.</em></p><h2>F2: web01 was the entry point</h2><p><span class=tag>medium</span><span class=tag>refuted</span><span class=note>The evidence contradicts this claim.</span></p><h3>What happened</h3><p>The attacker got in through the web server on 10.0.0.9.</p><h3>Supporting evidence</h3><p>None linked.</p><h3>Contradicting evidence</h3><div class=card><strong>E3 web01-access</strong>, whole item — no request from 203.0.113.50 appears in the web log<pre>   1  2026-10-29T17:55:01Z  10.0.0.20 - - [29/Oct/2026:17:55:01 +0000] &quot;GET / HTTP/1.1&quot; 200 612 &quot;-&quot; &quot;curl/8.5.0&quot;
+   2  2026-10-29T18:05:11Z  10.0.0.20 - - [29/Oct/2026:18:05:11 +0000] &quot;GET /status HTTP/1.1&quot; 200 88 &quot;-&quot; &quot;curl/8.5.0&quot;
+   3  2026-10-29T18:11:40Z  198.51.100.7 - - [29/Oct/2026:18:11:40 +0000] &quot;GET /robots.txt HTTP/1.1&quot; 404 146 &quot;-&quot; &quot;Mozilla/5.0&quot;
+   4  2026-10-29T18:30:02Z  10.0.0.20 - - [29/Oct/2026:18:30:02 +0000] &quot;GET /status HTTP/1.1&quot; 200 88 &quot;-&quot; &quot;curl/8.5.0&quot;</pre></div><h3>Context</h3><div class=card><strong>E1 scan-before</strong>, observations 6-8 — port 80 is open<pre>   6  2026-10-29T17:00:41Z  host 10.0.0.9 (web01.lab.example) is up
+   7  2026-10-29T17:00:41Z  10.0.0.9:80/tcp open http nginx 1.24.0
+   8  2026-10-29T17:00:41Z  10.0.0.9:80/tcp http-title: Lab status page</pre></div><h3>What remains unknown</h3><p>Nothing recorded.</p><h2>Open questions for the whole case</h2><ul><li>U3: Is the clock on jump01 correct? All times come from its own log.</li></ul><h2>Evidence register</h2><table><tr><th>Ref<th>Label<th>Kind<th>File<th>Observations<th>SHA-256</tr><tr><td>E1<td>scan-before<td>nmap<td>scan-before.xml<td>8<td><code>c156816173c84201f4403800e8ca7cfc5f33968a298fd9ea447a7470597772f0</code><tr><td>E2<td>jump01-auth<td>log<td>auth.log<td>31<td><code>ac5d0227c2543e7f31db30bfbf4d40f5437545e5fe968d203b4438f6b43def9f</code><tr><td>E3<td>web01-access<td>log<td>web-access.log<td>4<td><code>e91c5f5a59bee20de9dba12c9aa7049078ebbc323a8c1ac4468d1c9afbeaa209</code></table><p class=note>Generated by casefile 0.1.0. Conclusions are the analyst's; this tool organises evidence and does not decide what it means.</p></main></body></html>

@@ -1,0 +1,110 @@
+============================= test session starts ==============================
+platform linux -- Python 3.13.18, pytest-9.1.1, pluggy-1.6.0 -- /usr/local/bin/python3
+cachedir: .pytest_cache
+rootdir: /home/claude/casefile
+configfile: pyproject.toml
+testpaths: tests
+plugins: platformdirs-4.13.0, anyio-4.15.1, cov-7.1.0
+collecting ... collected 80 items
+
+tests/integration/test_acceptance.py::test_the_supported_finding_cites_scan_and_log_evidence PASSED [  1%]
+tests/integration/test_acceptance.py::test_the_wrong_hypothesis_ends_up_refuted_by_evidence PASSED [  2%]
+tests/integration/test_acceptance.py::test_unknowns_are_reported_and_not_hidden PASSED [  3%]
+tests/integration/test_acceptance.py::test_integrity_verifies_and_evidence_is_registered_with_hashes PASSED [  5%]
+tests/integration/test_acceptance.py::test_transcript_never_leaks_the_scratch_directory PASSED [  6%]
+tests/integration/test_cli.py::test_version_and_missing_command PASSED   [  7%]
+tests/integration/test_cli.py::test_commands_need_an_existing_case PASSED [  8%]
+tests/integration/test_cli.py::test_init_refuses_to_overwrite PASSED     [ 10%]
+tests/integration/test_cli.py::test_import_sniffs_kind_and_prints_summary PASSED [ 11%]
+tests/integration/test_cli.py::test_duplicate_label_error_is_clear PASSED [ 12%]
+tests/integration/test_cli.py::test_bad_inputs_are_reported_not_raised[nmap] PASSED [ 13%]
+tests/integration/test_cli.py::test_bad_inputs_are_reported_not_raised[log] PASSED [ 15%]
+tests/integration/test_cli.py::test_entity_bomb_is_refused_end_to_end PASSED [ 16%]
+tests/integration/test_cli.py::test_show_and_search PASSED               [ 17%]
+tests/integration/test_cli.py::test_finding_flow_and_reference_parsing PASSED [ 18%]
+tests/integration/test_cli.py::test_report_formats_and_output_file PASSED [ 20%]
+tests/integration/test_cli.py::test_verify_exit_codes_and_report_exit_code_on_tampering PASSED [ 21%]
+tests/integration/test_cli.py::test_environment_variable_selects_the_case PASSED [ 22%]
+tests/unit/test_logs.py::test_syslog_line_gets_time_host_and_program PASSED [ 23%]
+tests/unit/test_logs.py::test_syslog_single_digit_day PASSED             [ 25%]
+tests/unit/test_logs.py::test_impossible_syslog_date_keeps_the_line_without_a_time PASSED [ 26%]
+tests/unit/test_logs.py::test_access_log_line_uses_client_address_and_zone PASSED [ 27%]
+tests/unit/test_logs.py::test_iso_prefixed_lines_with_and_without_zone PASSED [ 28%]
+tests/unit/test_logs.py::test_invalid_iso_and_clf_times_are_kept_without_a_time PASSED [ 30%]
+tests/unit/test_logs.py::test_unrecognised_lines_are_kept_as_is PASSED   [ 31%]
+tests/unit/test_logs.py::test_blank_lines_are_skipped_but_original_line_numbers_are_kept PASSED [ 32%]
+tests/unit/test_logs.py::test_crlf_and_invalid_utf8_do_not_fail PASSED   [ 33%]
+tests/unit/test_logs.py::test_very_long_lines_are_clipped_in_the_summary_only PASSED [ 35%]
+tests/unit/test_logs.py::test_binary_empty_and_oversized_logs_are_refused PASSED [ 36%]
+tests/unit/test_logs.py::test_year_defaults_to_the_current_year PASSED   [ 37%]
+tests/unit/test_nmap.py::test_lab_scan_yields_scan_hosts_ports_os_and_scripts PASSED [ 38%]
+tests/unit/test_nmap.py::test_the_bare_doctype_nmap_writes_is_accepted PASSED [ 40%]
+tests/unit/test_nmap.py::test_entity_declarations_are_refused PASSED     [ 41%]
+tests/unit/test_nmap.py::test_internal_dtd_subset_is_refused_even_without_entities PASSED [ 42%]
+tests/unit/test_nmap.py::test_entity_check_is_case_insensitive PASSED    [ 43%]
+tests/unit/test_nmap.py::test_malformed_xml_is_an_error_not_a_crash[] PASSED [ 45%]
+tests/unit/test_nmap.py::test_malformed_xml_is_an_error_not_a_crash[not xml] PASSED [ 46%]
+tests/unit/test_nmap.py::test_malformed_xml_is_an_error_not_a_crash[<nmaprun><host>] PASSED [ 47%]
+tests/unit/test_nmap.py::test_other_xml_is_refused PASSED                [ 48%]
+tests/unit/test_nmap.py::test_host_without_an_address_is_skipped_and_mac_is_not_the_address PASSED [ 50%]
+tests/unit/test_nmap.py::test_ipv6_and_missing_attributes_do_not_break_parsing PASSED [ 51%]
+tests/unit/test_nmap.py::test_long_script_output_is_clipped_and_whitespace_collapsed PASSED [ 52%]
+tests/unit/test_nmap.py::test_scan_without_a_start_time_has_no_timestamps PASSED [ 53%]
+tests/unit/test_report.py::test_markdown_report_matches_golden PASSED    [ 55%]
+tests/unit/test_report.py::test_json_report_matches_golden_and_is_valid PASSED [ 56%]
+tests/unit/test_report.py::test_findings_are_ordered_by_severity_then_id PASSED [ 57%]
+tests/unit/test_report.py::test_secrets_are_redacted_in_quotes_by_default PASSED [ 58%]
+tests/unit/test_report.py::test_html_escapes_untrusted_evidence_and_text PASSED [ 60%]
+tests/unit/test_report.py::test_unsupported_and_uncontradicted_findings_are_flagged PASSED [ 61%]
+tests/unit/test_report.py::test_a_refuted_finding_without_contradiction_is_called_out PASSED [ 62%]
+tests/unit/test_report.py::test_long_evidence_ranges_are_truncated_with_a_count PASSED [ 63%]
+tests/unit/test_report.py::test_integrity_failure_is_stated_loudly PASSED [ 65%]
+tests/unit/test_report.py::test_empty_case_renders PASSED                [ 66%]
+tests/unit/test_store.py::test_create_refuses_to_overwrite_and_open_requires_a_file PASSED [ 67%]
+tests/unit/test_store.py::test_non_database_and_wrong_schema_are_refused PASSED [ 68%]
+tests/unit/test_store.py::test_case_file_and_sidecars_are_owner_only PASSED [ 70%]
+tests/unit/test_store.py::test_evidence_round_trip_keeps_original_bytes_and_hash PASSED [ 71%]
+tests/unit/test_store.py::test_duplicate_labels_are_refused_and_leave_no_trace PASSED [ 72%]
+tests/unit/test_store.py::test_evidence_and_observations_are_immutable PASSED [ 73%]
+tests/unit/test_store.py::test_failed_import_rolls_back_completely PASSED [ 75%]
+tests/unit/test_store.py::test_finding_validation PASSED                 [ 76%]
+tests/unit/test_store.py::test_supported_requires_supporting_evidence PASSED [ 77%]
+tests/unit/test_store.py::test_the_last_support_cannot_be_removed_from_a_supported_finding PASSED [ 78%]
+tests/unit/test_store.py::test_link_ranges_are_validated_against_real_observations PASSED [ 80%]
+tests/unit/test_store.py::test_observation_queries_and_search_escape_wildcards PASSED [ 81%]
+tests/unit/test_store.py::test_unknowns_can_be_case_wide_or_per_finding_and_resolved PASSED [ 82%]
+tests/unit/test_store.py::test_verify_passes_on_a_clean_case PASSED      [ 83%]
+tests/unit/test_store.py::test_verify_detects_an_edited_audit_row PASSED [ 85%]
+tests/unit/test_store.py::test_verify_detects_a_deleted_middle_row PASSED [ 86%]
+tests/unit/test_store.py::test_verify_detects_tampered_evidence_even_if_the_hash_column_is_rewritten PASSED [ 87%]
+tests/unit/test_store.py::test_verify_detects_changed_content_with_the_original_hash PASSED [ 88%]
+tests/unit/test_store.py::test_an_external_anchor_catches_removed_trailing_rows PASSED [ 90%]
+tests/unit/test_store.py::test_a_deleted_evidence_row_is_reported PASSED [ 91%]
+tests/unit/test_store.py::test_clock_is_injected_and_monotonic PASSED    [ 92%]
+tests/unit/test_timeparse_redact.py::test_time_forms PASSED              [ 93%]
+tests/unit/test_timeparse_redact.py::test_bad_times_are_clear_errors[yesterday] PASSED [ 95%]
+tests/unit/test_timeparse_redact.py::test_bad_times_are_clear_errors[5x] PASSED [ 96%]
+tests/unit/test_timeparse_redact.py::test_bad_times_are_clear_errors[] PASSED [ 97%]
+tests/unit/test_timeparse_redact.py::test_redaction_patterns PASSED      [ 98%]
+tests/unit/test_timeparse_redact.py::test_python_dash_m_runs_the_cli PASSED [100%]
+
+================================ tests coverage ================================
+_______________ coverage: platform linux, python 3.13.18-final-0 _______________
+
+Name                                 Stmts   Miss Branch BrPart  Cover   Missing
+--------------------------------------------------------------------------------
+src/casefile/__init__.py                 1      0      0      0   100%
+src/casefile/__main__.py                 2      2      0      0     0%   1-3
+src/casefile/cli.py                    219      7     62      2    97%   65, 68-69, 173-174, 248, 289
+src/casefile/importers/__init__.py      12      1      4      1    88%   18
+src/casefile/importers/errors.py         2      0      0      0   100%
+src/casefile/importers/logs.py          60      0     18      0   100%
+src/casefile/importers/nmap.py          58      0     16      0   100%
+src/casefile/model.py                   69      0      0      0   100%
+src/casefile/redact.py                  30      0      6      0   100%
+src/casefile/report.py                 158      0     48      0   100%
+src/casefile/store.py                  299      5     94      3    98%   153, 177-178, 261, 335
+src/casefile/timeparse.py               35      0     10      0   100%
+--------------------------------------------------------------------------------
+TOTAL                                  945     15    258      6    98%
+============================== 80 passed in 3.36s ==============================

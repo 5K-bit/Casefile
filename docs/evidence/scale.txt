@@ -1,0 +1,7 @@
+python 3.13.18 on Linux x86_64
+lines imported:          200,000
+log file:                18.5 MB
+case file:               72.2 MB
+import:                  3.4 s
+search (full scan, 0 hits): 0.03 s
+verify:                  0.02 s
