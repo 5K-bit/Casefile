@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 240" role="img" aria-labelledby="t d">
+  <title id="t">Casefile</title>
+  <desc id="d">Casefile logo: a violet case folder with evidence lines and a magnifying glass, next to the word Casefile.</desc>
+  <defs>
+    <linearGradient id="word" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#c4b5fd"/>
+      <stop offset="0.5" stop-color="#a78bfa"/>
+      <stop offset="1" stop-color="#7c5cf0"/>
+    </linearGradient>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#150f2b"/>
+      <stop offset="1" stop-color="#0c1220"/>
+    </linearGradient>
+  </defs>
+  <rect width="880" height="240" rx="28" fill="url(#bg)"/>
+  <rect x="1.5" y="1.5" width="877" height="237" rx="26.5" fill="none" stroke="#a78bfa" stroke-opacity="0.35" stroke-width="3"/>
+  <g transform="translate(40 40)">
+    <rect width="160" height="160" rx="36" fill="#0e0a20" stroke="#a78bfa" stroke-width="4"/>
+    <g transform="translate(22 34) scale(.5)" fill="none" stroke="#c4b5fd" stroke-width="8" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M20 60h62l16 22h112a14 14 0 0 1 14 14v92a14 14 0 0 1-14 14H34a14 14 0 0 1-14-14z"/>
+      <path d="M52 124h70M52 150h46"/>
+      <circle cx="168" cy="140" r="26" fill="#0e0a20"/>
+      <path d="M187 159l24 24"/>
+    </g>
+  </g>
+  <text x="238" y="140" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace"
+        font-size="96" font-weight="700" letter-spacing="2" fill="url(#word)">Casefile</text>
+  <text x="242" y="188" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace"
+        font-size="26" fill="#a99fd1">$ what supports the conclusion?<tspan fill="#a78bfa">_</tspan></text>
+</svg>

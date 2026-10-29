@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="400" viewBox="0 0 1200 400" role="img" aria-labelledby="title desc">
+<title id="title">Casefile — Cybersecurity investigation desk</title><desc id="desc">What happened, what supports it, and what remains unknown. Evidence from scans and logs organised into findings and a report. By OBEOS.</desc>
+<defs><pattern id="grid" width="32" height="32" patternUnits="userSpaceOnUse"><path d="M32 0H0V32" fill="none" stroke="#ffffff" stroke-opacity=".035"/></pattern></defs>
+<rect width="1200" height="400" rx="18" fill="#0c1220"/><rect width="1200" height="400" rx="18" fill="url(#grid)"/>
+<path d="M48 40h42" stroke="#a78bfa" stroke-width="5"/>
+<text x="106" y="46" fill="#c5cddb" font-family="Arial, sans-serif" font-size="16" letter-spacing="3">BY OBEOS</text>
+<text x="48" y="114" fill="#a78bfa" font-family="Arial, sans-serif" font-size="16" letter-spacing="3">INVESTIGATION / 02</text>
+<text x="45" y="194" fill="#f3f5fa" font-family="Arial, sans-serif" font-size="76" font-weight="700" letter-spacing="-2">Casefile</text>
+<text x="48" y="247" fill="#e0e6ef" font-family="Arial, sans-serif" font-size="25">Cybersecurity investigation desk</text>
+<text x="48" y="285" fill="#99a7bc" font-family="Arial, sans-serif" font-size="21">What happened? What supports it? What is still unknown?</text>
+<path d="M48 331h1104" stroke="#283345"/>
+<text x="48" y="366" fill="#99a7bc" font-family="Arial, sans-serif" font-size="15" letter-spacing="2">LOCAL SYSTEMS. CLEAR PURPOSE.</text>
+<text x="1106" y="366" fill="#a78bfa" font-family="Arial, sans-serif" font-size="17" font-weight="700">5K</text>
+<g transform="translate(905 76)" fill="none" stroke="#a78bfa" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 60h62l16 22h112a14 14 0 0 1 14 14v92a14 14 0 0 1-14 14H34a14 14 0 0 1-14-14z"/><path d="M52 124h70M52 150h46"/><circle cx="168" cy="140" r="26" fill="#0c1220"/><path d="M187 159l24 24"/></g>
+</svg>
