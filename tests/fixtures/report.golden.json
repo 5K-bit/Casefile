@@ -1,0 +1,197 @@
+{
+  "case": {
+    "analyst": "tester",
+    "generated": "2026-10-29T20:00:00Z",
+    "name": "Test case",
+    "redacted": true
+  },
+  "case_unknowns": [
+    {
+      "id": 3,
+      "resolution": "",
+      "resolved": false,
+      "text": "Is there a second host?"
+    }
+  ],
+  "evidence": [
+    {
+      "filename": "auth.log",
+      "imported": "2026-10-29T18:53:22Z",
+      "kind": "log",
+      "label": "auth",
+      "note": "",
+      "observations": 5,
+      "ref": "E1",
+      "sha256": "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
+      "size": 3
+    }
+  ],
+  "findings": [
+    {
+      "caveats": [
+        "No contradicting evidence has been recorded for this finding."
+      ],
+      "counts": {
+        "context": 1,
+        "contradicts": 0,
+        "supports": 1
+      },
+      "evidence": {
+        "context": [
+          {
+            "evidence": "E1 auth",
+            "link_id": 2,
+            "note": "",
+            "quotes": [
+              {
+                "seq": 3,
+                "subject": "log",
+                "text": "<script>alert(1)</script>",
+                "ts": "2026-10-29T18:53:20Z"
+              }
+            ],
+            "role": "context",
+            "seq_from": 3,
+            "seq_to": 3,
+            "total": 1
+          }
+        ],
+        "contradicts": [],
+        "supports": [
+          {
+            "evidence": "E1 auth",
+            "link_id": 1,
+            "note": "login and secret",
+            "quotes": [
+              {
+                "seq": 1,
+                "subject": "log",
+                "text": "login ok",
+                "ts": "2026-10-29T18:53:20Z"
+              },
+              {
+                "seq": 2,
+                "subject": "log",
+                "text": "password=[REDACTED] used",
+                "ts": "2026-10-29T18:53:20Z"
+              }
+            ],
+            "role": "supports",
+            "seq_from": 1,
+            "seq_to": 2,
+            "total": 2
+          }
+        ]
+      },
+      "ref": "F1",
+      "severity": "high",
+      "statement": "Someone used the account.",
+      "status": "supported",
+      "status_note": "The evidence below supports this conclusion.",
+      "title": "Account misuse",
+      "unknowns": [
+        {
+          "id": 1,
+          "resolution": "",
+          "resolved": false,
+          "text": "Who was it?"
+        },
+        {
+          "id": 2,
+          "resolution": "NTP logs agree",
+          "resolved": true,
+          "text": "Was the clock right?"
+        }
+      ]
+    },
+    {
+      "caveats": [],
+      "counts": {
+        "context": 0,
+        "contradicts": 0,
+        "supports": 0
+      },
+      "evidence": {
+        "context": [],
+        "contradicts": [],
+        "supports": []
+      },
+      "ref": "F3",
+      "severity": "medium",
+      "statement": "Maybe insiders.",
+      "status": "hypothesis",
+      "status_note": "A hypothesis. It is not yet supported by linked evidence.",
+      "title": "Untested idea",
+      "unknowns": []
+    },
+    {
+      "caveats": [],
+      "counts": {
+        "context": 0,
+        "contradicts": 1,
+        "supports": 0
+      },
+      "evidence": {
+        "context": [],
+        "contradicts": [
+          {
+            "evidence": "E1 auth",
+            "link_id": 3,
+            "note": "no web requests",
+            "quotes": [
+              {
+                "seq": 1,
+                "subject": "log",
+                "text": "login ok",
+                "ts": "2026-10-29T18:53:20Z"
+              },
+              {
+                "seq": 2,
+                "subject": "log",
+                "text": "password=[REDACTED] used",
+                "ts": "2026-10-29T18:53:20Z"
+              },
+              {
+                "seq": 3,
+                "subject": "log",
+                "text": "<script>alert(1)</script>",
+                "ts": "2026-10-29T18:53:20Z"
+              },
+              {
+                "seq": 4,
+                "subject": "log",
+                "text": "d",
+                "ts": "2026-10-29T18:53:20Z"
+              },
+              {
+                "seq": 5,
+                "subject": "log",
+                "text": "e",
+                "ts": "2026-10-29T18:53:20Z"
+              }
+            ],
+            "role": "contradicts",
+            "seq_from": null,
+            "seq_to": null,
+            "total": 5
+          }
+        ],
+        "supports": []
+      },
+      "ref": "F2",
+      "severity": "low",
+      "statement": "The web server was hit.",
+      "status": "refuted",
+      "status_note": "The evidence contradicts this claim.",
+      "title": "Web compromise",
+      "unknowns": []
+    }
+  ],
+  "integrity": {
+    "audit_rows": 14,
+    "head": "7e767f28f1c0cfde86eb32a3695db8b0ed696095e88f2f854c9f47aa308f7ed7",
+    "ok": true,
+    "problems": []
+  },
+  "tool": "casefile 0.1.0"
+}

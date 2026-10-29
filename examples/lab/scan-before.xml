@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE nmaprun>
+<?xml-stylesheet href="file:///usr/share/nmap/nmap.xsl" type="text/xsl"?>
+<nmaprun scanner="nmap" args="nmap -sV -oX scan.xml 10.0.0.5 10.0.0.9" start="1793293200" startstr="Thu Oct 29 17:00:00 2026" version="7.95" xmloutputversion="1.05">
+<host starttime="1793293201" endtime="1793293240"><status state="up" reason="echo-reply"/>
+<address addr="10.0.0.5" addrtype="ipv4"/>
+<hostnames><hostname name="jump01.lab.example" type="PTR"/></hostnames>
+<ports>
+<port protocol="tcp" portid="22"><state state="open" reason="syn-ack"/><service name="ssh" product="OpenSSH" version="8.9p1 Ubuntu 3ubuntu0.6" method="probed" conf="10"/></port>
+<port protocol="tcp" portid="3306"><state state="closed" reason="reset"/><service name="mysql" method="table" conf="3"/></port>
+</ports>
+<os><osmatch name="Linux 5.15 - 6.1" accuracy="96"/></os>
+</host>
+<host starttime="1793293241" endtime="1793293270"><status state="up" reason="echo-reply"/>
+<address addr="10.0.0.9" addrtype="ipv4"/>
+<hostnames><hostname name="web01.lab.example" type="PTR"/></hostnames>
+<ports>
+<port protocol="tcp" portid="80"><state state="open" reason="syn-ack"/><service name="http" product="nginx" version="1.24.0" method="probed" conf="10"/><script id="http-title" output="Lab status page"/></port>
+</ports>
+</host>
+</nmaprun>
