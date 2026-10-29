@@ -2,7 +2,7 @@
 
 Analyst: 5K · Generated: 2026-10-29T20:00:00Z · Evidence quotes redacted
 
-Case integrity: verified (16 audit entries, head `0492f39b08ab6df6`).
+Case integrity: verified (16 audit entries, head `01c5fef7859372a2`).
 
 ## Findings
 

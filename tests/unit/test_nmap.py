@@ -49,6 +49,51 @@ def test_entity_check_is_case_insensitive() -> None:
         parse_nmap_xml(b'<!doctype nmaprun [<!entity a "b">]><nmaprun/>')
 
 
+BOMB = (
+    '<?xml version="1.0" encoding="{enc}"?><!DOCTYPE nmaprun [<!ENTITY a "aaaa">]>'
+    '<nmaprun start="1793293200">&a;</nmaprun>'
+)
+
+
+@pytest.mark.parametrize("py_enc", ["utf-16", "utf-16-le", "utf-16-be"])
+def test_utf16_entities_are_refused(py_enc: str) -> None:
+    # declared "UTF-16" with a BOM, and BOM-less LE/BE that expat sniffs from the first bytes
+    with pytest.raises(NmapError, match="entities"):
+        parse_nmap_xml(BOMB.format(enc="UTF-16").encode(py_enc))
+
+
+@pytest.mark.parametrize("declared", ["UTF-16-LE", "UTF-16-BE", "no-such-encoding"])
+def test_encodings_expat_cannot_decode_are_an_import_error(declared: str) -> None:
+    doc = BOMB.format(enc=declared).encode("utf-16-le")
+    with pytest.raises(NmapError):
+        parse_nmap_xml(doc)
+
+
+def test_utf16_with_bom_and_internal_subset_only_is_refused() -> None:
+    doc = "<!DOCTYPE nmaprun [<!ELEMENT x ANY>]><nmaprun/>"
+    with pytest.raises(NmapError):
+        parse_nmap_xml(b"\xff\xfe" + doc.encode("utf-16-le"))
+
+
+def test_entity_declaration_split_by_comment_or_whitespace_is_refused() -> None:
+    for decl in ('<!ENTITY\na "b">', "<!ENTITY%\tp 'x'>", '<!--c--><!ENTITY a "b">'):
+        with pytest.raises(NmapError):
+            parse_nmap_xml(f"<!DOCTYPE nmaprun [{decl}]><nmaprun/>".encode())
+
+
+def test_declared_latin1_encoding_with_entities_is_refused() -> None:
+    doc = (
+        '<?xml version="1.0" encoding="ISO-8859-1"?><!DOCTYPE nmaprun [<!ENTITY a "b">]><nmaprun/>'
+    )
+    with pytest.raises(NmapError):
+        parse_nmap_xml(doc.encode("latin-1"))
+
+
+def test_utf16_nmap_output_without_entities_still_parses() -> None:
+    doc = '<?xml version="1.0" encoding="UTF-16"?><!DOCTYPE nmaprun><nmaprun start="1"/>'
+    assert parse_nmap_xml(doc.encode("utf-16"))[0].kind == "scan"
+
+
 @pytest.mark.parametrize("content", [b"", b"not xml", b"<nmaprun><host>"])
 def test_malformed_xml_is_an_error_not_a_crash(content: bytes) -> None:
     with pytest.raises(NmapError, match="not valid XML"):

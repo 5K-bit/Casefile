@@ -3,20 +3,22 @@
 The file is untrusted. Python's XML parser expands internal entities, which allows
 "billion laughs" memory attacks, so any file that declares entities or an internal DTD
 subset is refused. Real Nmap output only carries a bare ``<!DOCTYPE nmaprun>``.
+
+The refusal is made by expat itself (declaration handlers that raise), not by matching
+bytes: the same parser that would expand an entity decodes the document first, so
+UTF-16 and other encodings, comments and odd whitespace cannot hide a declaration.
 """
 
 from __future__ import annotations
 
-import re
 import xml.etree.ElementTree as ET  # noqa: N817, S405 - input is screened before parsing
-from typing import Any
+from typing import Any, NoReturn
+from xml.parsers import expat  # noqa: S407 - used only to screen, with every handler refusing
 
 from ..model import ObservationDraft
 from .errors import ImportFailure
 
 MAX_OUTPUT_CHARS = 600
-_ENTITY = re.compile(rb"<!ENTITY", re.IGNORECASE)
-_DOCTYPE_SUBSET = re.compile(rb"<!DOCTYPE[^>\[]*\[", re.IGNORECASE)
 
 
 class NmapError(ImportFailure):
@@ -29,16 +31,47 @@ def _epoch_us(value: str | None) -> int | None:
     return None
 
 
+class _Refused(Exception):  # noqa: N818 - internal signal, never escapes this module
+    pass
+
+
+def _screen(content: bytes) -> None:
+    """Raise :class:`NmapError` if expat sees an entity, internal subset or external entity.
+
+    Handlers fire at the declaration, before any reference could be expanded, and this pass
+    builds no tree, so it is cheap and cannot itself be inflated.
+    """
+
+    def refuse(*_args: Any) -> NoReturn:
+        raise _Refused
+
+    def doctype(_name: Any, _sysid: Any, _pubid: Any, has_internal: Any) -> int:
+        if has_internal:
+            raise _Refused
+        return 0
+
+    parser = expat.ParserCreate()
+    parser.EntityDeclHandler = refuse
+    parser.StartDoctypeDeclHandler = doctype
+    parser.ExternalEntityRefHandler = refuse
+    parser.SetParamEntityParsing(expat.XML_PARAM_ENTITY_PARSING_NEVER)
+    try:
+        parser.Parse(content, True)
+    except _Refused:
+        raise NmapError("refusing XML that declares entities or an internal DTD subset") from None
+    except (expat.ExpatError, ValueError, LookupError) as exc:  # unusable encoding
+        raise NmapError(f"not valid XML: {exc}") from exc
+
+
 def _attr(node: ET.Element | None, name: str, default: str = "") -> str:
     return default if node is None else node.get(name, default)
 
 
 def parse_nmap_xml(content: bytes) -> list[ObservationDraft]:
-    if _ENTITY.search(content) or _DOCTYPE_SUBSET.search(content):
-        raise NmapError("refusing XML that declares entities or an internal DTD subset")
+    _screen(content)
     try:
         root = ET.fromstring(content)  # noqa: S314 - screened above
-    except ET.ParseError as exc:
+    except (ET.ParseError, ValueError, LookupError) as exc:
         raise NmapError(f"not valid XML: {exc}") from exc
     if root.tag != "nmaprun":
         raise NmapError(f"not an Nmap XML file (root element is <{root.tag}>)")

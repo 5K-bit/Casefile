@@ -261,10 +261,25 @@ def test_an_external_anchor_catches_removed_trailing_rows(store: CaseStore) -> N
     store.add_finding("two", "s", "low")
     anchor = store.head()
     assert store.verify(anchor).ok
-    _break(store, f"DELETE FROM audit WHERE id = {len(store.audit_rows())}").close()
-    assert store.verify().ok  # the chain alone cannot see a truncated tail
+    # An attacker who truncates the log and also removes what it described: the chain and the
+    # replay are both internally consistent, so only the external anchor can see it.
+    conn = _break(store, f"DELETE FROM audit WHERE id = {len(store.audit_rows())}")
+    conn.execute("DELETE FROM findings WHERE id = 2")
+    conn.commit()
+    conn.close()
+    assert store.verify().ok
     result = store.verify(anchor)
     assert not result.ok and any("anchor" in p for p in result.problems)
+
+
+def test_truncating_the_log_alone_is_caught_without_an_anchor(store: CaseStore) -> None:
+    add_ev(store)
+    store.add_finding("one", "s", "low")
+    conn = _break(store, f"DELETE FROM audit WHERE id = {len(store.audit_rows())}")
+    conn.close()
+    assert any(
+        "F1 is in the case but not in the audit history" in p for p in store.verify().problems
+    )
 
 
 def test_a_deleted_evidence_row_is_reported(store: CaseStore) -> None:
@@ -277,6 +292,112 @@ def test_a_deleted_evidence_row_is_reported(store: CaseStore) -> None:
     conn.commit()
     conn.close()
     assert any("no longer in the case" in p for p in store.verify().problems)
+
+
+def _supported_case(store: CaseStore) -> int:
+    add_ev(store)
+    f = store.add_finding("Brute force", "Many failures then a success", "high")
+    store.add_link(f.id, 1, role=ROLE_SUPPORTS, seq_from=1, seq_to=2, note="the burst")
+    store.set_status(f.id, "supported", "reviewed")
+    store.add_unknown("Was the account reused?", f.id)
+    store.add_unknown("Is there a second host?")
+    assert store.verify().ok
+    return f.id
+
+
+def test_direct_edit_of_a_finding_statement_fails_verify(store: CaseStore) -> None:
+    fid = _supported_case(store)
+    anchor = store.head()
+    raw_conn = raw(store)
+    raw_conn.execute("UPDATE findings SET statement = 'Nothing happened' WHERE id = ?", (fid,))
+    raw_conn.commit()
+    raw_conn.close()
+    result = store.verify(anchor)
+    assert not result.ok and any(f"F{fid}" in p and "statement" in p for p in result.problems)
+
+
+@pytest.mark.parametrize(
+    ("column", "value"),
+    [("title", "'Renamed'"), ("severity", "'low'"), ("status", "'refuted'")],
+)
+def test_direct_edit_of_any_finding_field_fails_verify(
+    store: CaseStore, column: str, value: str
+) -> None:
+    fid = _supported_case(store)
+    conn = raw(store)
+    conn.execute(f"UPDATE findings SET {column} = {value} WHERE id = {fid}")
+    conn.commit()
+    conn.close()
+    assert any(column in p for p in store.verify().problems)
+
+
+def test_marking_supported_without_evidence_by_direct_edit_fails_verify(store: CaseStore) -> None:
+    add_ev(store)
+    f = store.add_finding("t", "claim", "low")
+    conn = raw(store)
+    conn.execute("UPDATE findings SET status = 'supported' WHERE id = ?", (f.id,))
+    conn.commit()
+    conn.close()
+    problems = store.verify(store.head()).problems
+    assert any("status" in p for p in problems)
+
+
+def test_injected_finding_link_and_unknown_fail_verify(store: CaseStore) -> None:
+    _supported_case(store)
+    conn = raw(store)
+    conn.execute(
+        "INSERT INTO findings (title,statement,severity,status,created_us,updated_us) "
+        "VALUES ('x','y','low','supported',1,1)"
+    )
+    conn.execute("INSERT INTO links (finding_id,evidence_id,role,note) VALUES (1,1,'supports','')")
+    conn.execute("INSERT INTO unknowns (finding_id,text) VALUES (NULL,'smuggled')")
+    conn.commit()
+    conn.close()
+    problems = " | ".join(store.verify().problems)
+    assert "F2" in problems and "L2" in problems and "U3" in problems
+
+
+def test_deleted_or_edited_link_and_unknown_fail_verify(store: CaseStore) -> None:
+    _supported_case(store)
+    conn = raw(store)
+    conn.execute("UPDATE links SET seq_to = 5, note = 'forged' WHERE id = 1")
+    conn.execute("UPDATE unknowns SET resolved = 1, resolution = 'nope' WHERE id = 1")
+    conn.execute("DELETE FROM unknowns WHERE id = 2")
+    conn.commit()
+    conn.close()
+    problems = " | ".join(store.verify().problems)
+    assert "L1" in problems and "U1" in problems and "U2" in problems
+
+
+def test_deleted_finding_fails_verify(store: CaseStore) -> None:
+    fid = _supported_case(store)
+    conn = raw(store)
+    conn.execute("PRAGMA foreign_keys = OFF")
+    conn.execute("DELETE FROM unknowns WHERE finding_id = ?", (fid,))
+    conn.execute("DELETE FROM links WHERE finding_id = ?", (fid,))
+    conn.execute("DELETE FROM findings WHERE id = ?", (fid,))
+    conn.commit()
+    conn.close()
+    assert any(f"F{fid}" in p for p in store.verify().problems)
+
+
+def test_edited_case_metadata_and_evidence_labels_fail_verify(store: CaseStore) -> None:
+    _supported_case(store)
+    conn = _break(store, "UPDATE meta SET value = 'someone else' WHERE key = 'analyst'")
+    conn.execute("UPDATE evidence SET label = 'renamed', filename = 'x' WHERE id = 1")
+    conn.commit()
+    conn.close()
+    problems = " | ".join(store.verify().problems)
+    assert "analyst" in problems and "E1" in problems and "label" in problems
+
+
+def test_legitimate_history_replays_cleanly(store: CaseStore) -> None:
+    fid = _supported_case(store)
+    store.add_link(fid, 1, role=ROLE_CONTEXT, note="extra")
+    store.remove_link(2)
+    store.set_status(fid, "refuted", "new evidence")
+    store.resolve_unknown(1, "no")
+    assert store.verify(store.head()).ok
 
 
 def test_clock_is_injected_and_monotonic(tmp_path: Path) -> None:

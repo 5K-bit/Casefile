@@ -43,5 +43,5 @@ F1   high      supported    jump01 was brute-forced and an account was compromis
 F2   medium    refuted      web01 was the entry point
 $ casefile verify
 audit entries: 16
-head: 0492f39b08ab6df6b463ed6e8df33b225115f5d1b0d2ced294484a91b3749963
+head: 01c5fef7859372a22b28db6bd1c39abc458f4e64ed44494d324726fbea61e892
 integrity: OK

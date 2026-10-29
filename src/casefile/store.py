@@ -7,8 +7,10 @@ Design notes (see docs/adr/0001-single-file-case-with-audit-chain.md):
   original material.
 * ``evidence`` and ``observations`` are immutable: triggers reject UPDATE and DELETE.
 * Findings, links and unknowns can change, but every change is recorded in ``audit``,
-  an append-only log where ``hash = SHA-256(prev_hash || fields)``. Editing or removing
-  an audit row, or altering stored evidence, is found by :meth:`CaseStore.verify`.
+  an append-only log where ``hash = SHA-256(prev_hash || fields)``. Each record carries the
+  complete values written, so :meth:`CaseStore.verify` can replay the log and compare the
+  result with the live tables: editing or removing an audit row, altering stored evidence,
+  or changing a finding, link or unknown behind the tool's back is all found there.
   This is tamper *evidence*, not tamper proofing: someone with write access to the file
   can rebuild the chain. Record the head hash elsewhere (``casefile status``) to detect that.
 * A finding cannot be marked ``supported`` without at least one supporting link.
@@ -234,11 +236,12 @@ class CaseStore:
     # -- case ------------------------------------------------------------------
 
     def init_case(self, name: str, analyst: str) -> None:
+        now = self._clock()
         with self._tx() as conn:
             conn.execute("INSERT INTO meta VALUES ('name', ?)", (name,))
             conn.execute("INSERT INTO meta VALUES ('analyst', ?)", (analyst,))
-            conn.execute("INSERT INTO meta VALUES ('created_us', ?)", (str(self._clock()),))
-            self._audit(conn, "case.created", {"name": name, "analyst": analyst})
+            conn.execute("INSERT INTO meta VALUES ('created_us', ?)", (str(now),))
+            self._audit(conn, "case.created", {"name": name, "analyst": analyst, "created_us": now})
 
     def meta(self, key: str) -> str | None:
         row = self._conn.execute("SELECT value FROM meta WHERE key = ?", (key,)).fetchone()
@@ -295,6 +298,7 @@ class CaseStore:
                         "filename": filename,
                         "sha256": sha,
                         "size": len(content),
+                        "note": note,
                         "observations": len(observations),
                     },
                 )
@@ -425,7 +429,13 @@ class CaseStore:
             self._audit(
                 conn,
                 "finding.added",
-                {"id": fid, "title": title.strip(), "severity": severity},
+                {
+                    "id": fid,
+                    "title": title.strip(),
+                    "statement": statement.strip(),
+                    "severity": severity,
+                    "created_us": now,
+                },
             )
         return self.finding(fid)
 
@@ -516,6 +526,7 @@ class CaseStore:
                     "from": seq_from,
                     "to": seq_to,
                     "role": role,
+                    "note": note,
                 },
             )
         return Link(lid, finding_id, evidence_id, seq_from, seq_to, role, note)
@@ -564,7 +575,9 @@ class CaseStore:
                 "INSERT INTO unknowns (finding_id, text) VALUES (?, ?)", (finding_id, text.strip())
             )
             uid = int(cur.lastrowid or 0)
-            self._audit(conn, "unknown.added", {"id": uid, "finding": finding_id})
+            self._audit(
+                conn, "unknown.added", {"id": uid, "finding": finding_id, "text": text.strip()}
+            )
         return Unknown(uid, finding_id, text.strip(), False, "")
 
     def resolve_unknown(self, unknown_id: int, resolution: str) -> None:
@@ -577,7 +590,9 @@ class CaseStore:
             )
             if cur.rowcount == 0:
                 raise CaseError(f"no unknown U{unknown_id}")
-            self._audit(conn, "unknown.resolved", {"id": unknown_id})
+            self._audit(
+                conn, "unknown.resolved", {"id": unknown_id, "resolution": resolution.strip()}
+            )
 
     def unknowns(self, finding_id: int | None = None, *, scope: str = "finding") -> list[Unknown]:
         """``scope='finding'`` returns one finding's unknowns; ``'case'`` those with none."""
@@ -608,7 +623,8 @@ class CaseStore:
         problems: list[str] = []
         prev = GENESIS_HASH
         expected_id = 1
-        imported: dict[int, str] = {}
+        imported: dict[int, dict[str, Any]] = {}
+        replay = _Replay()
         count = 0
         for rid, ts, action, detail, prev_hash, digest in self._conn.execute(
             "SELECT id,ts_us,action,detail,prev_hash,hash FROM audit ORDER BY id"
@@ -623,12 +639,16 @@ class CaseStore:
             if _hash(prev_hash, ts, action, detail) != digest:
                 problems.append(f"audit row {rid} was altered")
             prev = digest
-            if action == "evidence.imported":
-                try:
-                    info = json.loads(detail)
-                    imported[int(info["id"])] = str(info["sha256"])
-                except (ValueError, KeyError, TypeError):
-                    problems.append(f"audit row {rid} has an unreadable import record")
+            try:
+                info = json.loads(detail)
+                if action == "evidence.imported":
+                    imported[int(info["id"])] = {**info, "sha256": str(info["sha256"])}
+                else:
+                    replay.apply(action, info)
+            except (ValueError, KeyError, TypeError, AttributeError):
+                problems.append(f"audit row {rid} has an unreadable {action} record")
+            except _HistoryError as exc:
+                problems.append(f"audit row {rid}: {exc}")
         if expected_head is not None and expected_head != prev:
             problems.append(
                 "the audit head does not match the recorded anchor "
@@ -638,11 +658,156 @@ class CaseStore:
             actual = hashlib.sha256(self.evidence_content(ev.id)).hexdigest()
             if actual != ev.sha256:
                 problems.append(f"E{ev.id} ({ev.label}): content does not match its stored hash")
-            if imported.get(ev.id) != ev.sha256:
+            record = imported.get(ev.id)
+            if record is None or record["sha256"] != ev.sha256:
                 problems.append(f"E{ev.id} ({ev.label}): hash differs from the audit record")
+            if record is not None:
+                for column, stored in (
+                    ("label", ev.label),
+                    ("kind", ev.kind),
+                    ("filename", ev.filename),
+                    ("size", ev.size),
+                    ("note", ev.note),
+                ):
+                    if record.get(column) != stored:
+                        problems.append(
+                            f"E{ev.id} ({ev.label}): {column} differs from the audit record"
+                        )
         for missing in set(imported) - {e.id for e in self.list_evidence()}:
             problems.append(f"E{missing} was imported but is no longer in the case")
+        problems.extend(self._compare_analysis(replay))
         return VerifyResult(not problems, count, prev, problems)
+
+    def _compare_analysis(self, replay: _Replay) -> list[str]:
+        """Compare the live case metadata, findings, links and unknowns with the replayed log."""
+        problems: list[str] = []
+        for key, expected in (("name", replay.meta_name), ("analyst", replay.meta_analyst)):
+            if self.meta(key) != expected:
+                problems.append(f"case {key} differs from the audit history")
+        if self.meta("created_us") != (
+            None if replay.created_us is None else str(replay.created_us)
+        ):
+            problems.append("case created_us differs from the audit history")
+        rows = self._conn.execute(
+            "SELECT id,title,statement,severity,status,created_us FROM findings"
+        ).fetchall()
+        live_findings = {r[0]: dict(zip(_FINDING_FIELDS, r[1:], strict=True)) for r in rows}
+        problems += _diff("F", live_findings, replay.findings)
+        rows = self._conn.execute(
+            "SELECT id,finding_id,evidence_id,seq_from,seq_to,role,note FROM links"
+        ).fetchall()
+        live_links = {r[0]: dict(zip(_LINK_FIELDS, r[1:], strict=True)) for r in rows}
+        problems += _diff("L", live_links, replay.links)
+        rows = self._conn.execute(
+            "SELECT id,finding_id,text,resolved,resolution FROM unknowns"
+        ).fetchall()
+        live_unknowns = {r[0]: dict(zip(_UNKNOWN_FIELDS, r[1:], strict=True)) for r in rows}
+        problems += _diff("U", live_unknowns, replay.unknowns)
+        supported = {
+            link["finding"] for link in replay.links.values() if link["role"] == ROLE_SUPPORTS
+        }
+        for fid, finding in live_findings.items():
+            if finding["status"] == STATUS_SUPPORTED and fid not in supported:
+                problems.append(f"F{fid} is marked supported but has no supporting link")
+        return problems
+
+
+_FINDING_FIELDS = ("title", "statement", "severity", "status", "created_us")
+_LINK_FIELDS = ("finding", "evidence", "from", "to", "role", "note")
+_UNKNOWN_FIELDS = ("finding", "text", "resolved", "resolution")
+
+
+class _HistoryError(Exception):
+    """The audit history contradicts itself (e.g. a change to a finding it never created)."""
+
+
+class _Replay:
+    """The metadata, findings, links and unknowns the audit log says should exist."""
+
+    def __init__(self) -> None:
+        self.meta_name: str | None = None
+        self.meta_analyst: str | None = None
+        self.created_us: int | None = None
+        self.findings: dict[int, dict[str, Any]] = {}
+        self.links: dict[int, dict[str, Any]] = {}
+        self.unknowns: dict[int, dict[str, Any]] = {}
+
+    def apply(self, action: str, info: dict[str, Any]) -> None:
+        if action == "case.created":
+            self.meta_name, self.meta_analyst = str(info["name"]), str(info["analyst"])
+            self.created_us = int(info["created_us"])
+        elif action == "finding.added":
+            self._new(self.findings, "finding", info["id"])
+            self.findings[info["id"]] = {
+                "title": info["title"],
+                "statement": info["statement"],
+                "severity": info["severity"],
+                "status": STATUS_HYPOTHESIS,
+                "created_us": info["created_us"],
+            }
+        elif action == "finding.status":
+            finding = self._get(self.findings, "finding", info["id"])
+            if finding["status"] != info["from"]:
+                raise _HistoryError(
+                    f"F{info['id']} changed from {info['from']!r} but was {finding['status']!r}"
+                )
+            finding["status"] = info["to"]
+        elif action == "link.added":
+            self._get(self.findings, "finding", info["finding"])
+            self._new(self.links, "link", info["id"])
+            self.links[info["id"]] = {
+                "finding": info["finding"],
+                "evidence": info["evidence"],
+                "from": info["from"],
+                "to": info["to"],
+                "role": info["role"],
+                "note": info["note"],
+            }
+        elif action == "link.removed":
+            self._get(self.links, "link", info["id"])
+            del self.links[info["id"]]
+        elif action == "unknown.added":
+            self._new(self.unknowns, "unknown", info["id"])
+            self.unknowns[info["id"]] = {
+                "finding": info["finding"],
+                "text": info["text"],
+                "resolved": 0,
+                "resolution": "",
+            }
+        elif action == "unknown.resolved":
+            unknown = self._get(self.unknowns, "unknown", info["id"])
+            unknown["resolved"], unknown["resolution"] = 1, info["resolution"]
+        else:
+            raise _HistoryError(f"unknown action {action!r}")
+
+    @staticmethod
+    def _get(table: dict[int, dict[str, Any]], noun: str, key: int) -> dict[str, Any]:
+        if key not in table:
+            raise _HistoryError(f"refers to a {noun} ({key}) that the history never created")
+        return table[key]
+
+    @staticmethod
+    def _new(table: dict[int, dict[str, Any]], noun: str, key: int) -> None:
+        if key in table:
+            raise _HistoryError(f"creates {noun} {key} twice")
+
+
+def _diff(
+    prefix: str, live: dict[int, dict[str, Any]], expected: dict[int, dict[str, Any]]
+) -> list[str]:
+    problems: list[str] = []
+    for key in sorted(live.keys() | expected.keys()):
+        if key not in expected:
+            problems.append(f"{prefix}{key} is in the case but not in the audit history")
+        elif key not in live:
+            problems.append(f"{prefix}{key} is in the audit history but missing from the case")
+        else:
+            problems.extend(
+                f"{prefix}{key} {name} differs from the audit history"
+                for name, value in expected[key].items()
+                if live[key][name] != value
+            )
+    return problems
 
 
 def _like_escape(text: str) -> str:
