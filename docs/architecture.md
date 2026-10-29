@@ -68,7 +68,9 @@ def parse_hosts_file(content: bytes) -> list[ObservationDraft]:
     for line in content.decode("utf-8", errors="replace").splitlines():
         parts = line.split("#")[0].split()
         if len(parts) >= 2:
-            drafts.append(ObservationDraft("hosts", parts[0], line.strip(), None, {"names": parts[1:]}))
+            drafts.append(
+                ObservationDraft("hosts", parts[0], line.strip(), None, {"names": parts[1:]})
+            )
     return drafts
 ```
 
