@@ -1,0 +1,67 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: test (${{ matrix.os }}, py${{ matrix.python }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        python: ["3.11", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Install
+        run: python -m pip install -e ".[dev]"
+      - name: Lint
+        run: |
+          ruff check .
+          ruff format --check .
+      - name: Type check
+        run: mypy
+      - name: Tests (with coverage floor)
+        run: python -m pytest --cov --cov-fail-under=90
+
+  acceptance:
+    name: lab investigation (end to end)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install without development tools
+        run: python -m pip install .
+      - name: Run the lab investigation through the installed CLI
+        run: |
+          casefile --case lab.casefile init "CI lab" --analyst ci
+          casefile --case lab.casefile import examples/lab/scan-before.xml
+          casefile --case lab.casefile import examples/lab/auth.log --year 2026
+          casefile --case lab.casefile finding add "Brute force" --statement "Many failures then a success"
+          casefile --case lab.casefile link F1 auth --lines 3-27
+          casefile --case lab.casefile finding status F1 supported --reason ci
+          casefile --case lab.casefile report --format html --out report.html
+          casefile --case lab.casefile verify
+
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Audit dependencies
+        run: |
+          python -m pip install -e . pip-audit
+          pip-audit
