@@ -12,7 +12,7 @@ Casefile has three layers: **importers** that turn raw files into observations, 
                                                       │
                           show · search · finding · link · unknown
                           report ──► Markdown / HTML / JSON
-                          verify ──► recompute hashes and the chain
+                          verify ──► recompute hashes and the chain, replay the log against the tables
 ```
 
 ## Modules

@@ -2,7 +2,7 @@
 
 Analyst: tester · Generated: 2026-10-29T20:00:00Z · Evidence quotes redacted
 
-Case integrity: verified (14 audit entries, head `7e767f28f1c0cfde`).
+Case integrity: verified (14 audit entries, head `e4262a2e3ae46b4b`).
 
 ## Findings
 

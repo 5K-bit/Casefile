@@ -109,7 +109,7 @@ casefile status                                     # includes the audit head to
 | `link F E [--lines --role --note]` / `unlink L` | Tie evidence to a finding as `supports`, `contradicts` or `context` |
 | `unknown add [--finding]` / `unknown resolve U --how` | Record what is not known |
 | `report [--format --out --no-redact --max-quotes]` | Investigation report |
-| `verify [--anchor HASH]` | Recompute hashes and the audit chain |
+| `verify [--anchor HASH]` | Recompute hashes and the audit chain, and replay it against findings, links and unknowns |
 | `status` | Counts and audit head |
 
 `--case PATH` (or `$CASEFILE_PATH`) selects the case file; the default is `./case.casefile`. Exit codes: 0 ok, 1 error, 2 integrity failure.
@@ -150,7 +150,7 @@ The last recorded run (Linux, Python 3.13) is in [docs/evidence/test-run.txt](do
 | Nmap hosts, ports, services, OS and scripts are parsed | [`tests/unit/test_nmap.py`](tests/unit/test_nmap.py) |
 | Entity-expansion and DTD tricks in Nmap XML are refused; the DOCTYPE real Nmap writes is accepted | `test_nmap.py`, [`test_cli.py`](tests/integration/test_cli.py) |
 | Syslog, ISO and access-log lines are parsed; binary, empty, oversized and malformed input is handled | [`tests/unit/test_logs.py`](tests/unit/test_logs.py) |
-| Evidence and observations cannot be updated or deleted; edits to the audit log, forged evidence and removed rows are detected | [`tests/unit/test_store.py`](tests/unit/test_store.py) |
+| Evidence and observations cannot be updated or deleted; edits to the audit log, forged evidence, removed rows and direct edits to findings, links or unknowns are detected | [`tests/unit/test_store.py`](tests/unit/test_store.py) |
 | A finding cannot be marked supported without supporting evidence; links must name real observations | `test_store.py` |
 | Reports match golden files; secrets are redacted by default; untrusted text is HTML-escaped | [`tests/unit/test_report.py`](tests/unit/test_report.py) with [golden files](tests/fixtures/) |
 | The lab investigation produces the expected report end to end | [`tests/integration/test_acceptance.py`](tests/integration/test_acceptance.py), [evidence](docs/evidence/) |
@@ -164,7 +164,7 @@ Casefile does not claim more than it has shown:
 - **It does not run scans or decide anything.** It organises evidence you collected. Whether evidence supports a conclusion is your judgement; the tool only refuses a `supported` status with nothing behind it.
 - **Tested on hand-written samples, not a corpus.** The importers are tested against synthetic Nmap XML and logs and hostile inputs. Real-world Nmap output (many hosts, unusual scans) and production logs may expose gaps. Send a sanitised sample if one fails.
 - **Evidence is stored unredacted.** Redaction applies to report quotes only, and it is pattern-based and best-effort. Read a report before sharing it. The case file is created owner-only on POSIX; on Windows it follows the folder ACL.
-- **Tamper evidence, not tamper proofing.** `verify` catches edits to evidence and history. Someone with write access can rebuild the chain, and removed trailing entries are only caught if you recorded the audit head elsewhere (`status`, then `verify --anchor`).
+- **Tamper evidence, not tamper proofing.** `verify` catches edits to evidence, findings, links, unknowns and history. Someone with write access can rebuild the chain, and removed trailing entries are only caught if you recorded the audit head elsewhere (`status`, then `verify --anchor`).
 - **Whole files are read into memory.** Evidence is capped at 256 MiB and logs at 500,000 lines. Case files are about four times the size of the log they hold. Search is a substring scan, with no full-text index.
 - **Times come from the source.** Syslog needs a year you supply and is assumed to be UTC. A source clock can be wrong.
 - **Two input types only.** No PCAP, Sentinel, Zeek, JSON-log or Windows event log import yet; those are roadmap items.
