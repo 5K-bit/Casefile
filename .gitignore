@@ -1,0 +1,20 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+build/
+dist/
+*.egg-info/
+.venv/
+.env
+
+# Case files hold raw evidence: never commit them (the recorded example is under docs/evidence)
+/*.casefile
+/*.casefile-*
+*.log
+
+# synthetic lab inputs are source
+!examples/lab/*.log
