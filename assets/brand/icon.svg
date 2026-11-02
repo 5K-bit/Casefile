@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-labelledby="t">
+  <title id="t">Casefile icon</title>
+  <rect width="256" height="256" rx="56" fill="#0c1220"/>
+  <rect x="6" y="6" width="244" height="244" rx="50" fill="none" stroke="#a78bfa" stroke-opacity=".35" stroke-width="4"/>
+  <g transform="translate(39.49 32.96) scale(0.7255)" fill="none" stroke="#a78bfa" stroke-width="13.78" stroke-linecap="round" stroke-linejoin="round"><path d="M20 60h62l16 22h112a14 14 0 0 1 14 14v92a14 14 0 0 1-14 14H34a14 14 0 0 1-14-14z"/><path d="M52 124h70M52 150h46"/><circle cx="168" cy="140" r="26" fill="#0c1220"/><path d="M187 159l24 24"/></g>
+</svg>
